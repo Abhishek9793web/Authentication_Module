@@ -7,6 +7,9 @@ const connectDB = require('./config/db');
 // Import routes
 const authRoutes = require('./routes/authRoutes');
 
+// New chat routes
+const chatRoutes = require('./routes/chatRoutes');
+
 // Load .env file
 dotenv.config();
 
@@ -20,6 +23,10 @@ app.use(express.json());
 
 // Use authentication routes
 app.use('/api', authRoutes);
+
+
+// Chat APIs
+app.use('/api', chatRoutes);
 
 
 // Simple home route
