@@ -1,30 +1,50 @@
-const Conversation = require('../models/Conversation');
-const Message = require('../models/Message');
+const Conversation =
+  require('../models/Conversation');
+
+const Message =
+  require('../models/Message');
+
+const {
+  createMessageNotifications
+} =
+  require('../services/notificationService');
 
 
-// ======================================================
+// ==========================================
 // SEND MESSAGE
-// POST /api/conversations/:conversationId/messages
-// ======================================================
+// ==========================================
 
-const sendMessage = async (req, res) => {
+const sendMessage = async (
+  req,
+  res
+) => {
+
   try {
 
-    // Get conversation ID from URL
-    const { conversationId } = req.params;
+    const {
+      conversationId
+    } = req.params;
 
-    // Get message text
-    const { text } = req.body;
+    const {
+      text
+    } = req.body;
 
-    // Logged-in user
-    const userId = req.user.id;
+    const senderId =
+      req.user.id;
 
+    // Check message
+    if (
+      !text ||
+      text.trim() === ''
+    ) {
 
-    // Check message text
-    if (!text || text.trim() === '') {
       return res.status(400).json({
-        message: 'Message text is required'
+
+        message:
+          'Message text is required'
+
       });
+
     }
 
 
@@ -34,50 +54,101 @@ const sendMessage = async (req, res) => {
         conversationId
       );
 
-
-    // Check conversation exists
+    // Check conversation
     if (!conversation) {
+
       return res.status(404).json({
-        message: 'Conversation not found'
+
+        message:
+          'Conversation not found'
+
       });
+
     }
 
 
-    // Check if user is part of conversation
+    // Check sender
     const isParticipant =
       conversation.participants.some(
+
         id =>
-          id.toString() === userId.toString()
+          id.toString() ===
+          senderId.toString()
+
       );
 
 
-    // User is not allowed
     if (!isParticipant) {
+
       return res.status(403).json({
+
         message:
-          'You cannot send messages to this conversation'
+          'You are not part of this conversation'
+
       });
+
     }
 
 
     // Create message
-    const message = await Message.create({
+    const message =
+      await Message.create({
 
-      // Which conversation?
-      conversation: conversationId,
+        conversation:
+          conversationId,
 
-      // Who sent it?
-      sender: userId,
+        sender:
+          senderId,
 
-      // Message text
-      text: text.trim()
+        text:
+          text.trim()
+
+      });
+
+    // ==========================================
+    // CREATE NOTIFICATIONS
+    // ==========================================
+
+    await createMessageNotifications({
+
+      io:
+        req.app.get('io'),
+
+      senderId,
+
+      conversationId,
+
+      messageId:
+        message._id,
+
+      participants:
+        conversation.participants
+
     });
 
+    // ==========================================
+    // SEND REAL-TIME MESSAGE
+    // ==========================================
 
-    // Return message
+    const io =
+      req.app.get('io');
+
+
+    io.to(
+      `conversation_${conversationId}`
+    ).emit(
+      'newMessage',
+      message
+    );
+
     return res.status(201).json({
-      message: 'Message sent successfully',
-      data: message
+
+      message:
+        'Message sent successfully',
+
+      data:
+        message
+
     });
 
   } catch (error) {
@@ -88,60 +159,55 @@ const sendMessage = async (req, res) => {
     );
 
     return res.status(500).json({
-      message: 'Something went wrong'
+
+      message:
+        'Something went wrong'
+
     });
+
   }
+
 };
 
+const getMessages = async (
+  req,
+  res
+) => {
 
-// ======================================================
-// GET CONVERSATION MESSAGES
-// GET /api/conversations/:conversationId/messages
-// ======================================================
-
-const getMessages = async (req, res) => {
   try {
 
-    // Get conversation ID
-    const { conversationId } = req.params;
+    const {
+      conversationId
+    } = req.params;
 
-    // Logged-in user
     const userId = req.user.id;
 
-
-    // Find conversation
     const conversation =
       await Conversation.findById(
         conversationId
       );
 
-
-    // Conversation doesn't exist
     if (!conversation) {
       return res.status(404).json({
-        message: 'Conversation not found'
+        message:
+          'Conversation not found'
       });
     }
 
-
-    // Check if user is participant
     const isParticipant =
       conversation.participants.some(
         id =>
-          id.toString() === userId.toString()
+          id.toString() ===
+          userId.toString()
       );
 
-
-    // Only participants can read messages
     if (!isParticipant) {
       return res.status(403).json({
         message:
-          'You cannot access this conversation'
+          'You are not part of this conversation'
       });
     }
 
-
-    // Get messages
     const messages =
       await Message.find({
         conversation: conversationId
@@ -154,9 +220,9 @@ const getMessages = async (req, res) => {
         createdAt: 1
       });
 
-
     return res.status(200).json({
-      message: 'Messages fetched successfully',
+      message:
+        'Messages fetched successfully',
       messages
     });
 
@@ -168,11 +234,11 @@ const getMessages = async (req, res) => {
     );
 
     return res.status(500).json({
-      message: 'Something went wrong'
+      message:
+        'Something went wrong'
     });
   }
 };
-
 
 module.exports = {
   sendMessage,

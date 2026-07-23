@@ -73,4 +73,47 @@ router.get(
 );
 
 
+const {
+  setActiveChat,
+  removeActiveChat
+} = require('../services/activeChatService');
+
+
+// User opens conversation
+router.post(
+  '/conversations/:conversationId/active',
+  authenticateToken,
+  (req, res) => {
+
+    setActiveChat(
+      req.user.id,
+      req.params.conversationId
+    );
+
+    res.status(200).json({
+      message:
+        'Conversation marked as active'
+    });
+  }
+);
+
+
+// User leaves conversation
+router.delete(
+  '/conversations/:conversationId/active',
+  authenticateToken,
+  (req, res) => {
+
+    removeActiveChat(
+      req.user.id
+    );
+
+    res.status(200).json({
+      message:
+        'Conversation marked as inactive'
+    });
+  }
+);
+
+
 module.exports = router;
