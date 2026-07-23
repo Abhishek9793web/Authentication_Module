@@ -13,6 +13,10 @@ const { Server } = require('socket.io');
 // Import CORS
 const cors = require('cors');
 
+// Import routes
+const userRoutes =
+  require('./routes/userRoutes');
+
 // ==========================================
 // IMPORT DATABASE CONNECTION
 // ==========================================
@@ -155,6 +159,18 @@ app.use('/api', authRoutes);
 // POST /api/conversations/:id/messages
 // GET  /api/conversations/:id/messages
 app.use('/api', chatRoutes);
+
+
+
+// ==========================================
+// USER ROUTES
+// ==========================================
+
+app.use(
+  '/api',
+  userRoutes
+);
+
 
 
 // Notification APIs
